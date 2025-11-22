@@ -5,6 +5,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import com.flightapp.dto.SearchRequest;
 import com.flightapp.dto.BookingRequest;
+import com.flightapp.dto.InventoryRequest;
 import com.flightapp.model.Inventory;
 import com.flightapp.model.Booking;
 import com.flightapp.repository.InventoryRepository;
@@ -58,8 +59,8 @@ public class FlightController {
 	}
 
 	@PostMapping("/airline/inventory/add")
-	public Mono<Inventory> addInventory(@RequestBody Inventory inv) {
-		return inventoryService.addInventory(inv);
+	public Mono<Inventory> addInventory(@RequestBody InventoryRequest req) {
+		return inventoryService.addInventory(req);
 	}
 
 }
