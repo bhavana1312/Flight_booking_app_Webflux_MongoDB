@@ -7,6 +7,7 @@ import com.flightapp.repository.InventoryRepository;
 import com.flightapp.model.Booking;
 import com.flightapp.model.Passenger;
 import com.flightapp.dto.BookingRequest;
+import com.flightapp.util.AppException;
 import com.flightapp.util.PnrGenerator;
 
 import reactor.core.publisher.Flux;
@@ -28,7 +29,7 @@ public class BookingServiceImpl implements BookingService {
 	public Mono<Booking> book(String flightId, BookingRequest req) {
 		return invRepo.findById(flightId).flatMap(inv -> {
 			if (inv.availableSeats < req.seats)
-				return Mono.error(new RuntimeException("not enough seats"));
+				return Mono.error(new AppException("not enough seats"));
 			inv.availableSeats = inv.availableSeats - req.seats;
 			return bookingRepo.save(makeBooking(inv, req)).flatMap(b -> invRepo.save(inv).thenReturn(b));
 		});
@@ -65,11 +66,11 @@ public class BookingServiceImpl implements BookingService {
 	public Mono<Booking> cancelTicket(String pnr) {
 		return bookingRepo.findByPnr(pnr).flatMap(b -> {
 			if (b == null)
-				return Mono.error(new RuntimeException("PNR not found"));
+				return Mono.error(new AppException("PNR not found"));
 
 			LocalDateTime now = LocalDateTime.now();
 			if (now.plusHours(24).isAfter(b.journeyDate)) {
-				return Mono.error(new RuntimeException("Cancellation allowed only 24 hours before journey"));
+				return Mono.error(new AppException("Cancellation allowed only 24 hours before journey"));
 			}
 
 			b.cancelled = true;
