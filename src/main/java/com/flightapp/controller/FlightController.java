@@ -23,7 +23,7 @@ public class FlightController{
   LocalDateTime start=req.date.atStartOfDay();
   LocalDateTime end=start.plusDays(1);
   return invRepo.findByFromAndToAndDepartureBetween(req.from,req.to,start,end);
- }
+}
 
  @PostMapping("/booking/{flightid}")
  public Mono<Booking> book(@PathVariable("flightid") String flightid,@RequestBody BookingRequest req){
