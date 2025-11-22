@@ -44,4 +44,10 @@ public class FlightController {
 	public Mono<Booking> cancel(@PathVariable("pnr") String pnr) {
 		return bookingService.cancelTicket(pnr);
 	}
+
+	@GetMapping("/booking/history/{email}")
+	public Flux<Booking> history(@PathVariable("email") String email) {
+		return bookingService.history(email);
+	}
+
 }

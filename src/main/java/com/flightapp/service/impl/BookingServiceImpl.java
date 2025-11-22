@@ -8,6 +8,8 @@ import com.flightapp.model.Booking;
 import com.flightapp.model.Passenger;
 import com.flightapp.dto.BookingRequest;
 import com.flightapp.util.PnrGenerator;
+
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
@@ -40,7 +42,7 @@ public class BookingServiceImpl implements BookingService {
 		b.name = req.name;
 		b.seatsBooked = req.seats;
 		b.bookedAt = LocalDateTime.now();
-		b.journeyDate = inv.departure.toLocalDate().atStartOfDay();
+		b.journeyDate = inv.departure;
 		b.amount = inv.price * req.seats;
 		b.cancelled = false;
 		b.passengers = req.passengers.stream().map(pd -> {
@@ -73,6 +75,11 @@ public class BookingServiceImpl implements BookingService {
 			b.cancelled = true;
 			return bookingRepo.save(b);
 		});
+	}
+
+	@Override
+	public Flux<Booking> history(String email) {
+		return bookingRepo.findByEmail(email);
 	}
 
 }
