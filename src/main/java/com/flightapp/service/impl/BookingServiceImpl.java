@@ -58,4 +58,21 @@ public class BookingServiceImpl implements BookingService {
 	public Mono<Booking> findByPnr(String pnr) {
 		return bookingRepo.findByPnr(pnr);
 	}
+
+	@Override
+	public Mono<Booking> cancelTicket(String pnr) {
+		return bookingRepo.findByPnr(pnr).flatMap(b -> {
+			if (b == null)
+				return Mono.error(new RuntimeException("PNR not found"));
+
+			LocalDateTime now = LocalDateTime.now();
+			if (now.plusHours(24).isAfter(b.journeyDate)) {
+				return Mono.error(new RuntimeException("Cancellation allowed only 24 hours before journey"));
+			}
+
+			b.cancelled = true;
+			return bookingRepo.save(b);
+		});
+	}
+
 }

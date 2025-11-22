@@ -8,4 +8,6 @@ public interface BookingService {
 	Mono<Booking> book(String flightId, BookingRequest req);
 
 	Mono<Booking> findByPnr(String pnr);
+
+	Mono<Booking> cancelTicket(String pnr);
 }
