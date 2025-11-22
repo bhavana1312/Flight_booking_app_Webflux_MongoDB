@@ -1,5 +1,7 @@
 package com.flightapp.service.impl;
 
+import java.util.HashMap;
+
 import org.springframework.stereotype.Service;
 
 import com.flightapp.model.Inventory;
@@ -18,7 +20,14 @@ public class InventoryServiceImpl implements InventoryService {
 
 	@Override
 	public Mono<Inventory> addInventory(Inventory inv) {
-		inv.availableSeats = inv.totalSeats;
-		return repo.save(inv);
+	    inv.availableSeats = inv.totalSeats;
+
+	    inv.seatMap = new HashMap<>();
+	    for (int i = 1; i <= inv.totalSeats; i++) {
+	        String seat = "S" + i;   
+	        inv.seatMap.put(seat, false);
+	    }
+
+	    return repo.save(inv);
 	}
 }

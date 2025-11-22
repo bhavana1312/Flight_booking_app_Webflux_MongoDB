@@ -33,7 +33,7 @@ public class FlightController {
 		LocalDateTime start = req.date.atStartOfDay();
 		LocalDateTime end = start.plusDays(1);
 		return invRepo.findByFromAndToAndDepartureBetween(req.from, req.to, start, end)
-	              .sort((a, b) -> a.departure.compareTo(b.departure));
+				.sort((a, b) -> a.departure.compareTo(b.departure));
 
 	}
 
