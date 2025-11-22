@@ -29,8 +29,10 @@ public class BookingServiceImpl implements BookingService {
 	public Mono<Booking> book(String flightId, BookingRequest req) {
 		return invRepo.findById(flightId).flatMap(inv -> {
 			if (inv.availableSeats < req.seats)
-				return Mono.error(new AppException("not enough seats"));
-			inv.availableSeats = inv.availableSeats - req.seats;
+				return Mono.error(new RuntimeException("not enough seats"));
+
+			inv.availableSeats -= req.seats;
+
 			return bookingRepo.save(makeBooking(inv, req)).flatMap(b -> invRepo.save(inv).thenReturn(b));
 		});
 	}
