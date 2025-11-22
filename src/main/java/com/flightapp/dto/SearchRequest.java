@@ -1,10 +1,12 @@
 package com.flightapp.dto;
 
 import java.time.LocalDate;
+import lombok.Data;
 
+@Data
 public class SearchRequest {
-	public String from;
-	public String to;
-	public LocalDate date;
-	public boolean roundTrip;
+	private String from;
+	private String to;
+	private LocalDate date;
+	private boolean roundTrip;
 }

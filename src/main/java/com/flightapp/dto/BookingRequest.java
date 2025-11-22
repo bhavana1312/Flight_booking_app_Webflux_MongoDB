@@ -1,12 +1,14 @@
 package com.flightapp.dto;
 
 import java.util.List;
+import lombok.Data;
 
+@Data
 public class BookingRequest {
-	public String name;
-	public String email;
-	public int seats;
-	public List<PassengerDto> passengers;
-	public String meal;
-	public List<String> seatNumbers;
+	private String name;
+	private String email;
+	private int seats;
+	private List<PassengerDto> passengers;
+	private String meal;
+	private List<String> seatNumbers;
 }

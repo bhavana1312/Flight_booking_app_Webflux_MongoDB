@@ -1,8 +1,11 @@
 package com.flightapp.dto;
 
+import lombok.Data;
+
+@Data
 public class PassengerDto {
-	public String name;
-	public String gender;
-	public int age;
-	public String seatNo;
+	private String name;
+	private String gender;
+	private int age;
+	private String seatNo;
 }

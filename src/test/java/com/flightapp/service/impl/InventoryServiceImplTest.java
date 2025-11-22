@@ -17,46 +17,55 @@ import reactor.test.StepVerifier;
 
 import static org.mockito.Mockito.*;
 
+import java.time.LocalDateTime;
+
 class InventoryServiceImplTest {
 
-	@Mock
-	private InventoryRepository invRepo;
+    @Mock
+    private InventoryRepository invRepo;
 
-	@Mock
-	private AirlineRepository airlineRepo;
+    @Mock
+    private AirlineRepository airlineRepo;
 
-	@InjectMocks
-	private InventoryServiceImpl service;
+    @InjectMocks
+    private InventoryServiceImpl service;
 
-	private InventoryRequest req;
+    private InventoryRequest req;
 
-	@BeforeEach
-	void setup() {
-		MockitoAnnotations.openMocks(this);
+    @BeforeEach
+    void setup() {
+        MockitoAnnotations.openMocks(this);
 
-		req = new InventoryRequest();
-		req.airlineName = "Air India";
-		req.airlineCode = "AI";
-		req.airlineLogo = "logo.png";
-		req.flightNumber = "AI123";
-		req.from = "DEL";
-		req.to = "MUM";
-		req.departure = java.time.LocalDateTime.now().plusDays(1);
-		req.arrival = req.departure.plusHours(2);
-		req.totalSeats = 100;
-		req.price = 5000;
-	}
+        req = new InventoryRequest();
+        req.setAirlineName("Air India");
+        req.setAirlineCode("AI");
+        req.setAirlineLogo("logo.png");
+        req.setFlightNumber("AI123");
+        req.setFrom("DEL");
+        req.setTo("MUM");
+        req.setDeparture(LocalDateTime.now().plusDays(1));
+        req.setArrival(req.getDeparture().plusHours(2));
+        req.setTotalSeats(100);
+        req.setPrice(5000);
+    }
 
-	@Test
-	void addInventory_createsAirlineIfNotExists() {
+    @Test
+    void addInventory_createsAirlineIfNotExists() {
 
-		when(airlineRepo.findByCode("AI")).thenReturn(Mono.empty());
-		when(airlineRepo.save(any())).thenReturn(Mono.just(new Airline("Air India", "AI", "logo.png")));
-		when(invRepo.findByAirlineIdAndFlightNumber(any(), any())).thenReturn(Mono.empty());
-		when(invRepo.save(any())).thenReturn(Mono.just(new Inventory()));
+        when(airlineRepo.findByCode("AI")).thenReturn(Mono.empty());
 
-		StepVerifier.create(service.addInventory(req)).expectNextCount(1).verifyComplete();
-	}
+        Airline a = new Airline();
+        a.setId("A1");
+        a.setName("Air India");
+        a.setCode("AI");
+        a.setLogoUrl("logo.png");
 
-	
+        when(airlineRepo.save(any())).thenReturn(Mono.just(a));
+        when(invRepo.findByAirlineIdAndFlightNumber("A1", "AI123")).thenReturn(Mono.empty());
+        when(invRepo.save(any())).thenReturn(Mono.just(new Inventory()));
+
+        StepVerifier.create(service.addInventory(req))
+                .expectNextCount(1)
+                .verifyComplete();
+    }
 }

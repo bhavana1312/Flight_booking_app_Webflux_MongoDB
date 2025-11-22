@@ -28,154 +28,174 @@ import reactor.test.StepVerifier;
 
 class BookingServiceImplTest {
 
-	@Mock
-	private BookingRepository bookingRepo;
+    @Mock
+    private BookingRepository bookingRepo;
 
-	@Mock
-	private InventoryRepository invRepo;
+    @Mock
+    private InventoryRepository invRepo;
 
-	@InjectMocks
-	private BookingServiceImpl bookingService;
+    @InjectMocks
+    private BookingServiceImpl bookingService;
 
-	private Inventory inv;
-	private BookingRequest req;
+    private Inventory inv;
+    private BookingRequest req;
 
-	@BeforeEach
-	void setup() {
-		MockitoAnnotations.openMocks(this);
+    @BeforeEach
+    void setup() {
+        MockitoAnnotations.openMocks(this);
 
-		inv = new Inventory();
-		inv.id = "FL1";
-		inv.totalSeats = 10;
-		inv.availableSeats = 10;
-		inv.departure = LocalDateTime.now().plusDays(1);
-		inv.price = 1000;
-		inv.seatMap = new HashMap<>();
-		for (int i = 1; i <= 10; i++)
-			inv.seatMap.put("S" + i, false);
+        inv = new Inventory();
+        inv.setId("FL1");
+        inv.setTotalSeats(10);
+        inv.setAvailableSeats(10);
+        inv.setDeparture(LocalDateTime.now().plusDays(1));
+        inv.setPrice(1000);
 
-		req = new BookingRequest();
-		req.name = "Bhavana";
-		req.email = "bhavana@gmail.com";
-		req.seats = 1;
-		req.seatNumbers = List.of("S1");
+        HashMap<String, Boolean> map = new HashMap<>();
+        for (int i = 1; i <= 10; i++) map.put("S" + i, false);
+        inv.setSeatMap(map);
 
-		PassengerDto p = new PassengerDto();
-		p.name = "Bhavana";
-		p.gender = "Female";
-		p.age = 21;
-		p.seatNo = "S1";
-		req.passengers = List.of(p);
-	}
+        req = new BookingRequest();
+        req.setName("Bhavana");
+        req.setEmail("bhavana@gmail.com");
+        req.setSeats(1);
+        req.setSeatNumbers(List.of("S1"));
 
-	@Test
-	void book_success() {
+        PassengerDto p = new PassengerDto();
+        p.setName("Bhavana");
+        p.setGender("Female");
+        p.setAge(21);
+        p.setSeatNo("S1");
+        req.setPassengers(List.of(p));
+    }
 
-		when(invRepo.findById("FL1")).thenReturn(Mono.just(inv));
-		when(bookingRepo.save(any())).thenReturn(Mono.just(new Booking()));
-		when(invRepo.save(any())).thenReturn(Mono.just(inv));
+    @Test
+    void book_success() {
 
-		StepVerifier.create(bookingService.book("FL1", req)).expectNextCount(1).verifyComplete();
+        when(invRepo.findById("FL1")).thenReturn(Mono.just(inv));
+        when(bookingRepo.save(any())).thenReturn(Mono.just(new Booking()));
+        when(invRepo.save(any())).thenReturn(Mono.just(inv));
 
-		verify(invRepo).findById("FL1");
-		verify(bookingRepo).save(any());
-	}
+        StepVerifier.create(bookingService.book("FL1", req))
+                .expectNextCount(1)
+                .verifyComplete();
 
-	@Test
-	void book_invalidSeat() {
+        verify(invRepo).findById("FL1");
+        verify(bookingRepo).save(any());
+    }
 
-		req.seatNumbers = List.of("S999");
+    @Test
+    void book_invalidSeat() {
 
-		when(invRepo.findById("FL1")).thenReturn(Mono.just(inv));
+        req.setSeatNumbers(List.of("S999"));
 
-		StepVerifier.create(bookingService.book("FL1", req)).expectError(ValidationException.class).verify();
-	}
+        when(invRepo.findById("FL1")).thenReturn(Mono.just(inv));
 
-	@Test
-	void book_notEnoughSeats() {
+        StepVerifier.create(bookingService.book("FL1", req))
+                .expectError(ValidationException.class)
+                .verify();
+    }
 
-		inv.availableSeats = 0;
+    @Test
+    void book_notEnoughSeats() {
 
-		when(invRepo.findById("FL1")).thenReturn(Mono.just(inv));
+        inv.setAvailableSeats(0);
 
-		StepVerifier.create(bookingService.book("FL1", req)).expectError().verify();
-	}
+        when(invRepo.findById("FL1")).thenReturn(Mono.just(inv));
 
-	@Test
-	void seatAlreadyBooked() {
-		inv.seatMap.put("S1", true);
+        StepVerifier.create(bookingService.book("FL1", req))
+                .expectError()
+                .verify();
+    }
 
-		when(invRepo.findById("FL1")).thenReturn(Mono.just(inv));
+    @Test
+    void seatAlreadyBooked() {
+        inv.getSeatMap().put("S1", true);
 
-		StepVerifier.create(bookingService.book("FL1", req)).expectError().verify();
-	}
+        when(invRepo.findById("FL1")).thenReturn(Mono.just(inv));
 
-	@Test
-	void passengerCountMismatch() {
-		req.seats = 2;
+        StepVerifier.create(bookingService.book("FL1", req))
+                .expectError()
+                .verify();
+    }
 
-		when(invRepo.findById("FL1")).thenReturn(Mono.just(inv));
+    @Test
+    void passengerCountMismatch() {
+        req.setSeats(2);
 
-		StepVerifier.create(bookingService.book("FL1", req)).expectError().verify();
-	}
+        when(invRepo.findById("FL1")).thenReturn(Mono.just(inv));
 
-	@Test
-	void emptyPassengerList() {
-		req.passengers = List.of();
+        StepVerifier.create(bookingService.book("FL1", req))
+                .expectError()
+                .verify();
+    }
 
-		when(invRepo.findById("FL1")).thenReturn(Mono.just(inv));
+    @Test
+    void emptyPassengerList() {
+        req.setPassengers(List.of());
 
-		StepVerifier.create(bookingService.book("FL1", req)).expectError().verify();
-	}
+        when(invRepo.findById("FL1")).thenReturn(Mono.just(inv));
 
-	@Test
-	void cancelTicket_success() {
+        StepVerifier.create(bookingService.book("FL1", req))
+                .expectError()
+                .verify();
+    }
 
-		Booking b = new Booking();
-		b.pnr = "PNR123";
-		b.flightId = "FL1";
-		b.seatsBooked = 2;
-		b.journeyDate = LocalDateTime.now().plusDays(2);
-		b.cancelled = false;
+    @Test
+    void cancelTicket_success() {
 
-		Passenger p = new Passenger();
-		p.name = "X";
-		p.age = 20;
-		p.gender = "F";
-		p.seatNo = "S1";
+        Booking b = new Booking();
+        b.setPnr("PNR123");
+        b.setFlightId("FL1");
+        b.setSeatsBooked(2);
+        b.setJourneyDate(LocalDateTime.now().plusDays(2));
+        b.setCancelled(false);
 
-		Passenger p2 = new Passenger();
-		p2.name = "Y";
-		p2.age = 22;
-		p2.gender = "M";
-		p2.seatNo = "S2";
+        Passenger p1 = new Passenger();
+        p1.setName("X");
+        p1.setGender("F");
+        p1.setAge(20);
+        p1.setSeatNo("S1");
 
-		b.passengers = List.of(p, p2);
+        Passenger p2 = new Passenger();
+        p2.setName("Y");
+        p2.setGender("M");
+        p2.setAge(22);
+        p2.setSeatNo("S2");
 
-		when(bookingRepo.findByPnr("PNR123")).thenReturn(Mono.just(b));
-		when(invRepo.findById("FL1")).thenReturn(Mono.just(inv));
-		when(invRepo.save(inv)).thenReturn(Mono.just(inv));
-		when(bookingRepo.save(b)).thenReturn(Mono.just(b));
+        b.setPassengers(List.of(p1, p2));
 
-		StepVerifier.create(bookingService.cancelTicket("PNR123")).expectNext(b).verifyComplete();
-	}
+        when(bookingRepo.findByPnr("PNR123")).thenReturn(Mono.just(b));
+        when(invRepo.findById("FL1")).thenReturn(Mono.just(inv));
+        when(invRepo.save(inv)).thenReturn(Mono.just(inv));
+        when(bookingRepo.save(b)).thenReturn(Mono.just(b));
 
-	@Test
-	void cancelTicket_tooLate() {
-		Booking b = new Booking();
-		b.pnr = "PNR123";
-		b.flightId = "FL1";
-		b.journeyDate = LocalDateTime.now().plusHours(5);
+        StepVerifier.create(bookingService.cancelTicket("PNR123"))
+                .expectNext(b)
+                .verifyComplete();
+    }
 
-		when(bookingRepo.findByPnr("PNR123")).thenReturn(Mono.just(b));
+    @Test
+    void cancelTicket_tooLate() {
 
-		StepVerifier.create(bookingService.cancelTicket("PNR123")).expectError().verify();
-	}
+        Booking b = new Booking();
+        b.setPnr("PNR123");
+        b.setFlightId("FL1");
+        b.setJourneyDate(LocalDateTime.now().plusHours(5));
 
-	@Test
-	void cancelTicket_notFound() {
-		when(bookingRepo.findByPnr("X")).thenReturn(Mono.empty());
+        when(bookingRepo.findByPnr("PNR123")).thenReturn(Mono.just(b));
 
-		StepVerifier.create(bookingService.cancelTicket("X")).expectError().verify();
-	}
+        StepVerifier.create(bookingService.cancelTicket("PNR123"))
+                .expectError()
+                .verify();
+    }
+
+    @Test
+    void cancelTicket_notFound() {
+        when(bookingRepo.findByPnr("X")).thenReturn(Mono.empty());
+
+        StepVerifier.create(bookingService.cancelTicket("X"))
+                .expectError()
+                .verify();
+    }
 }

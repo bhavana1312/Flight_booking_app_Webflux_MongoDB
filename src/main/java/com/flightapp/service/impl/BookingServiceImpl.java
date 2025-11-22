@@ -16,7 +16,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
-import java.util.stream.Collectors;
 
 @Service
 public class BookingServiceImpl implements BookingService {
@@ -32,70 +31,79 @@ public class BookingServiceImpl implements BookingService {
 	@Override
 	public Mono<Booking> book(String flightId, BookingRequest req) {
 
-		if (req.seats <= 0)
-			return Mono.error(new ValidationException("Seat count must be positive"));
+		String validationError = validateBookingRequest(req);
+		if (validationError != null)
+			return Mono.error(new ValidationException(validationError));
 
-		if (req.passengers == null || req.passengers.isEmpty())
-			return Mono.error(new ValidationException("Passengers list cannot be empty"));
+		return invRepo.findById(flightId).switchIfEmpty(Mono.error(new ValidationException("Flight not found")))
+				.flatMap(inv -> validateInventory(inv, req).then(Mono.fromSupplier(() -> {
+					req.getSeatNumbers().forEach(seat -> inv.getSeatMap().put(seat, true));
+					inv.setAvailableSeats(inv.getAvailableSeats() - req.getSeats());
+					return makeBooking(inv, req);
+				})).flatMap(booking -> invRepo.save(inv).then(bookingRepo.save(booking))));
+	}
 
-		if (req.passengers.size() != req.seats)
-			return Mono.error(new ValidationException("Passengers count must match seat count"));
+	private String validateBookingRequest(BookingRequest req) {
 
-		if (req.seatNumbers == null || req.seatNumbers.isEmpty())
-			return Mono.error(new ValidationException("Seat numbers cannot be empty"));
+		if (req.getSeats() <= 0)
+			return "Seat count must be positive";
 
-		if (req.seatNumbers.size() != req.seats)
-			return Mono.error(new ValidationException("Seat number count must match seat count"));
+		if (req.getPassengers() == null || req.getPassengers().isEmpty())
+			return "Passengers list cannot be empty";
 
-		return invRepo.findById(flightId).flatMap(inv -> {
+		if (req.getPassengers().size() != req.getSeats())
+			return "Passengers count must match seat count";
 
-			if (inv.departure.isBefore(LocalDateTime.now()))
-				return Mono.error(new ValidationException("Cannot book past flights"));
+		if (req.getSeatNumbers() == null || req.getSeatNumbers().isEmpty())
+			return "Seat numbers cannot be empty";
 
-			if (inv.availableSeats < req.seats)
-				return Mono.error(new ValidationException("Not enough seats"));
+		if (req.getSeatNumbers().size() != req.getSeats())
+			return "Seat number count must match seat count";
 
-			for (String seat : req.seatNumbers) {
-				if (!inv.seatMap.containsKey(seat))
-					return Mono.error(new ValidationException("Invalid seat number: " + seat));
-			}
+		return null;
+	}
 
-			for (String seat : req.seatNumbers) {
-				if (inv.seatMap.get(seat))
-					return Mono.error(new ValidationException("Seat already booked: " + seat));
-			}
+	private Mono<Inventory> validateInventory(Inventory inv, BookingRequest req) {
 
-			req.seatNumbers.forEach(seat -> inv.seatMap.put(seat, true));
+		if (inv.getDeparture().isBefore(LocalDateTime.now()))
+			return Mono.error(new ValidationException("Cannot book past flights"));
 
-			inv.availableSeats -= req.seats;
+		if (inv.getAvailableSeats() < req.getSeats())
+			return Mono.error(new ValidationException("Not enough seats"));
 
-			Booking booking = makeBooking(inv, req);
+		for (String seat : req.getSeatNumbers()) {
 
-			return invRepo.save(inv).then(bookingRepo.save(booking));
-		});
+			if (!inv.getSeatMap().containsKey(seat))
+				return Mono.error(new ValidationException("Invalid seat number: " + seat));
+
+			if (Boolean.TRUE.equals(inv.getSeatMap().get(seat)))
+				return Mono.error(new ValidationException("Seat already booked: " + seat));
+		}
+
+		return Mono.just(inv);
 	}
 
 	private Booking makeBooking(Inventory inv, BookingRequest req) {
 
 		Booking b = new Booking();
-		b.pnr = PnrGenerator.generate();
-		b.flightId = inv.id;
-		b.email = req.email;
-		b.name = req.name;
-		b.seatsBooked = req.seats;
-		b.bookedAt = LocalDateTime.now();
-		b.journeyDate = inv.departure;
-		b.amount = inv.price * req.seats;
-		b.cancelled = false;
+		b.setPnr(PnrGenerator.generate());
+		b.setFlightId(inv.getId());
+		b.setEmail(req.getEmail());
+		b.setName(req.getName());
+		b.setSeatsBooked(req.getSeats());
+		b.setBookedAt(LocalDateTime.now());
+		b.setJourneyDate(inv.getDeparture());
+		b.setAmount(inv.getPrice() * req.getSeats());
+		b.setCancelled(false);
 
-		b.passengers = req.passengers.stream().map(pd -> {
+		b.setPassengers(req.getPassengers().stream().map(pd -> {
 			Passenger p = new Passenger();
-			p.name = pd.name;
-			p.age = pd.age;
-			p.gender = pd.gender;
-			p.seatNo = pd.seatNo;
+			p.setName(pd.getName());
+			p.setAge(pd.getAge());
+			p.setGender(pd.getGender());
+			p.setSeatNo(pd.getSeatNo());
 			return p;
-		}).collect(Collectors.toList());
+		}).toList());
 
 		return b;
 	}
@@ -111,23 +119,23 @@ public class BookingServiceImpl implements BookingService {
 		return bookingRepo.findByPnr(pnr).switchIfEmpty(Mono.error(new ValidationException("PNR not found")))
 				.flatMap(b -> {
 
-					if (b.cancelled)
+					if (b.isCancelled())
 						return Mono.error(new ValidationException("Ticket already cancelled"));
 
 					LocalDateTime now = LocalDateTime.now();
-					if (now.plusHours(24).isAfter(b.journeyDate))
+					if (now.plusHours(24).isAfter(b.getJourneyDate()))
 						return Mono.error(new ValidationException("Cancellation allowed only 24 hours before journey"));
 
-					return invRepo.findById(b.flightId)
+					return invRepo.findById(b.getFlightId())
 							.switchIfEmpty(Mono.error(new ValidationException("Flight not found"))).flatMap(inv -> {
 
-								if (b.passengers != null && inv.seatMap != null) {
-									b.passengers.forEach(p -> inv.seatMap.put(p.seatNo, false));
+								if (b.getPassengers() != null && inv.getSeatMap() != null) {
+									b.getPassengers().forEach(p -> inv.getSeatMap().put(p.getSeatNo(), false));
 								}
 
-								inv.availableSeats += b.seatsBooked;
+								inv.setAvailableSeats(inv.getAvailableSeats() + b.getSeatsBooked());
 
-								b.cancelled = true;
+								b.setCancelled(true);
 
 								return invRepo.save(inv).then(bookingRepo.save(b));
 							});

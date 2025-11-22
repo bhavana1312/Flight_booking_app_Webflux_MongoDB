@@ -9,12 +9,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
 	@ExceptionHandler(ValidationException.class)
-	public ResponseEntity<?> handleValidation(ValidationException ex) {
+	public ResponseEntity<String> handleValidation(ValidationException ex) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
 	}
 
 	@ExceptionHandler(RuntimeException.class)
-	public ResponseEntity<?> handleRuntime(RuntimeException ex) {
+	public ResponseEntity<String> handleRuntime(RuntimeException ex) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
 	}
 }

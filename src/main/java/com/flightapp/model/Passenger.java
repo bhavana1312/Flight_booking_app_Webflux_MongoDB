@@ -1,7 +1,12 @@
 package com.flightapp.model;
-public class Passenger{
- public String name;
- public String gender;
- public int age;
- public String seatNo;
+
+import lombok.Data;
+
+@Data
+public class Passenger {
+
+	private String name;
+	private String gender;
+	private int age;
+	private String seatNo;
 }
