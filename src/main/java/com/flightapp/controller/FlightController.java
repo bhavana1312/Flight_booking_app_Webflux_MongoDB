@@ -32,7 +32,9 @@ public class FlightController {
 	public Flux<Inventory> search(@RequestBody SearchRequest req) {
 		LocalDateTime start = req.date.atStartOfDay();
 		LocalDateTime end = start.plusDays(1);
-		return invRepo.findByFromAndToAndDepartureBetween(req.from, req.to, start, end);
+		return invRepo.findByFromAndToAndDepartureBetween(req.from, req.to, start, end)
+	              .sort((a, b) -> a.departure.compareTo(b.departure));
+
 	}
 
 	@PostMapping("/booking/{flightid}")
