@@ -107,29 +107,31 @@ public class BookingServiceImpl implements BookingService {
 
 	@Override
 	public Mono<Booking> cancelTicket(String pnr) {
-		return bookingRepo.findByPnr(pnr).flatMap(b -> {
 
-			if (b == null)
-				return Mono.error(new ValidationException("PNR not found"));
+		return bookingRepo.findByPnr(pnr).switchIfEmpty(Mono.error(new ValidationException("PNR not found")))
+				.flatMap(b -> {
 
-			if (b.cancelled)
-				return Mono.error(new ValidationException("Ticket already cancelled"));
+					if (b.cancelled)
+						return Mono.error(new ValidationException("Ticket already cancelled"));
 
-			LocalDateTime now = LocalDateTime.now();
-			if (now.plusHours(24).isAfter(b.journeyDate))
-				return Mono.error(new ValidationException("Cancellation allowed only 24 hours before journey"));
+					LocalDateTime now = LocalDateTime.now();
+					if (now.plusHours(24).isAfter(b.journeyDate))
+						return Mono.error(new ValidationException("Cancellation allowed only 24 hours before journey"));
 
-			return invRepo.findById(b.flightId).flatMap(inv -> {
+					return invRepo.findById(b.flightId)
+							.switchIfEmpty(Mono.error(new ValidationException("Flight not found"))).flatMap(inv -> {
 
-				b.passengers.forEach(p -> inv.seatMap.put(p.seatNo, false));
+								if (b.passengers != null && inv.seatMap != null) {
+									b.passengers.forEach(p -> inv.seatMap.put(p.seatNo, false));
+								}
 
-				inv.availableSeats += b.seatsBooked;
+								inv.availableSeats += b.seatsBooked;
 
-				b.cancelled = true;
+								b.cancelled = true;
 
-				return invRepo.save(inv).then(bookingRepo.save(b));
-			});
-		});
+								return invRepo.save(inv).then(bookingRepo.save(b));
+							});
+				});
 	}
 
 	@Override
