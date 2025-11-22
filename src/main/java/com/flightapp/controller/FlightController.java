@@ -9,6 +9,8 @@ import com.flightapp.model.Inventory;
 import com.flightapp.model.Booking;
 import com.flightapp.repository.InventoryRepository;
 import com.flightapp.service.BookingService;
+import com.flightapp.service.InventoryService;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -17,10 +19,13 @@ import java.time.LocalDateTime;
 public class FlightController {
 	private final InventoryRepository invRepo;
 	private final BookingService bookingService;
+	private final InventoryService inventoryService;
 
-	public FlightController(InventoryRepository invRepo, BookingService bookingService) {
+	public FlightController(InventoryRepository invRepo, BookingService bookingService,
+			InventoryService inventoryService) {
 		this.invRepo = invRepo;
 		this.bookingService = bookingService;
+		this.inventoryService = inventoryService;
 	}
 
 	@PostMapping("/search")
@@ -48,6 +53,11 @@ public class FlightController {
 	@GetMapping("/booking/history/{email}")
 	public Flux<Booking> history(@PathVariable("email") String email) {
 		return bookingService.history(email);
+	}
+
+	@PostMapping("/airline/inventory/add")
+	public Mono<Inventory> addInventory(@RequestBody Inventory inv) {
+		return inventoryService.addInventory(inv);
 	}
 
 }

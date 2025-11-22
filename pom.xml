@@ -83,6 +83,11 @@
     	<groupId>org.springframework.boot</groupId>
     	<artifactId>spring-boot-devtools</artifactId>
     </dependency>
+    <dependency>
+    	<groupId>com.flightapp</groupId>
+    	<artifactId>flightapp</artifactId>
+    	<version>0.0.1-SNAPSHOT</version>
+    </dependency>
 	</dependencies>
 
 	<build>
