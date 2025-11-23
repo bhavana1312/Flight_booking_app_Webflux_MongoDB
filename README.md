@@ -17,6 +17,11 @@ It supports end‑to‑end user flow including:
 - Load testing using JMeter
 
 ---
+## System Architecture
+
+<img width="1785" height="637" alt="Screenshot 2025-11-23 125206" src="https://github.com/user-attachments/assets/8742b5bf-5406-46e8-8c93-fe66bca1759d" />
+
+---
 
 ## Modules Implemented
 
