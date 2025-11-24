@@ -1,7 +1,10 @@
 package com.flightapp.controller;
 
+import java.net.URI;
 import java.time.LocalDateTime;
+import java.util.Map;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -46,8 +49,12 @@ public class FlightController {
 	}
 
 	@PostMapping("/booking/{flightid}")
-	public Mono<Booking> book(@PathVariable("flightid") String flightid, @RequestBody BookingRequest req) {
-		return bookingService.book(flightid, req);
+	public Mono<ResponseEntity<Map<String, String>>> book(@PathVariable("flightid") String flightid,
+			@RequestBody BookingRequest req) {
+		return bookingService.book(flightid, req).map(b -> {
+			Map<String, String> body = Map.of("id", b.getPnr());
+			return ResponseEntity.created(URI.create("/api/flight/ticket/" + b.getPnr())).body(body);
+		});
 	}
 
 	@GetMapping("/ticket/{pnr}")
@@ -56,9 +63,12 @@ public class FlightController {
 	}
 
 	@DeleteMapping("/booking/cancel/{pnr}")
-	public Mono<Booking> cancel(@PathVariable("pnr") String pnr) {
-		return bookingService.cancelTicket(pnr);
+	public Mono<ResponseEntity<Object>> cancel(@PathVariable("pnr") String pnr){
+		return bookingService.cancelTicket(pnr)
+			.map(b->ResponseEntity.noContent().build())
+			.defaultIfEmpty(ResponseEntity.notFound().build());
 	}
+
 
 	@GetMapping("/booking/history/{email}")
 	public Flux<Booking> history(@PathVariable("email") String email) {
@@ -66,8 +76,11 @@ public class FlightController {
 	}
 
 	@PostMapping("/airline/inventory/add")
-	public Mono<Inventory> addInventory(@RequestBody InventoryRequest req) {
-		return inventoryService.addInventory(req);
+	public Mono<ResponseEntity<Map<String, String>>> addInventory(@RequestBody InventoryRequest req) {
+		return inventoryService.addInventory(req).map(i -> {
+			Map<String, String> body = Map.of("id", i.getId());
+			return ResponseEntity.created(URI.create("/api/flight/inventory/" + i.getId())).body(body);
+		});
 	}
 
 }
